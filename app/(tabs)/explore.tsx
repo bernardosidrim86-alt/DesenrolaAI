@@ -1,20 +1,61 @@
+import { useEffect, useState } from 'react';
 import { router, Stack } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 
-const C = { bg: '#0D0D10', surface: '#17161D', border: '#2D2937', purple: '#A88BFF', pale: '#D0C0FF', text: '#F7F5FA', muted: '#9C98A6' };
+import { loadLearningCatalog, type LearningJourney, type LearningMission } from '@/lib/learning';
+import { useAuth } from '@/providers/AuthProvider';
 
-const topics = [
-  { n: '01', title: 'Dinheiro e consumo', desc: 'Organize seu dinheiro e faça escolhas melhores.', icon: { ios: 'wallet.bifold', android: 'account_balance_wallet', web: 'account_balance_wallet' }, tag: 'FINANÇAS' },
-  { n: '02', title: 'Comunicação e relações', desc: 'Converse, negocie e expresse suas ideias com clareza.', icon: { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' }, tag: 'RELAÇÕES' },
-  { n: '03', title: 'Organização e autonomia', desc: 'Planeje seu tempo e resolva situações do cotidiano.', icon: { ios: 'checkmark.circle', android: 'task_alt', web: 'task_alt' }, tag: 'VIDA PRÁTICA' },
-  { n: '04', title: 'Mundo digital', desc: 'Proteja seus dados, reconheça golpes e use tecnologia.', icon: { ios: 'lock.shield', android: 'security', web: 'security' }, tag: 'TECNOLOGIA' },
-  { n: '05', title: 'Trabalho e carreira', desc: 'Prepare-se para oportunidades e novos desafios.', icon: { ios: 'briefcase', android: 'work', web: 'work' }, tag: 'CARREIRA' },
-  { n: '06', title: 'Desenvolvimento pessoal', desc: 'Conheça seus objetivos e fortaleça seus hábitos.', icon: { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }, tag: 'AUTOCONHECIMENTO' },
-] as const;
+const C = { bg: '#0D0D10', surface: '#17161D', border: '#2D2937', purple: '#A88BFF', pale: '#D0C0FF', text: '#F7F5FA', muted: '#9C98A6' };
+const journeyIcons = [
+  { ios: 'safari', android: 'explore', web: 'explore' },
+  { ios: 'wallet.bifold', android: 'account_balance_wallet', web: 'account_balance_wallet' },
+  { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' },
+  { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' },
+];
 
 export default function ExploreScreen() {
+  const { user } = useAuth();
+  const [journeys, setJourneys] = useState<LearningJourney[]>([]);
+  const [missions, setMissions] = useState<LearningMission[]>([]);
+  const [completedIds, setCompletedIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+    let active = true;
+    loadLearningCatalog(user.id)
+      .then((catalog) => {
+        if (!active) return;
+        setJourneys(catalog.journeys);
+        setMissions(catalog.missions);
+        setCompletedIds(catalog.completedMissionIds);
+      })
+      .catch((loadError: unknown) => {
+        if (active) setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar as jornadas.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, [user?.id]);
+
+  const featuredJourney = journeys[0];
+  const featuredMissions = featuredJourney ? missions.filter((mission) => mission.journey_id === featuredJourney.id) : [];
+  const featuredNext = featuredMissions.find((mission) => !completedIds.includes(mission.id)) ?? featuredMissions[0];
+
+  function openJourney(journey: LearningJourney) {
+    const journeyMissions = missions.filter((mission) => mission.journey_id === journey.id);
+    const nextMission = journeyMissions.find((mission) => !completedIds.includes(mission.id)) ?? journeyMissions[0];
+    if (nextMission) router.push({ pathname: '/mission', params: { id: nextMission.id } } as never);
+    else router.navigate('/(tabs)/journeys' as never);
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -23,37 +64,52 @@ export default function ExploreScreen() {
         <Text style={styles.brand}>DESENROLA<Text style={styles.brandAccent}>AI</Text></Text>
         <Text style={styles.eyebrow}>EXPLORE</Text>
         <Text style={styles.title}>Conhecimento que cabe na vida real.</Text>
-        <Text style={styles.subtitle}>Escolha uma área e descubra habilidades que você pode praticar no dia a dia.</Text>
+        <Text style={styles.subtitle}>Escolha uma jornada e descubra habilidades que você pode praticar no dia a dia.</Text>
 
-        <Pressable style={styles.featured} onPress={() => router.push('/(tabs)/journeys' as never)}>
-          <View style={styles.featuredIcon}>
-            <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={C.pale} size={21} />
+        {featuredJourney ? (
+          <Pressable style={styles.featured} onPress={() => openJourney(featuredJourney)}>
+            <View style={styles.featuredIcon}>
+              <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={C.pale} size={21} />
+            </View>
+            <Text style={styles.featuredTag}>PARA COMEÇAR · {featuredJourney.category.toUpperCase()}</Text>
+            <Text style={styles.featuredTitle}>{featuredJourney.title}</Text>
+            <Text style={styles.featuredDesc}>{featuredJourney.description}</Text>
+            <View style={styles.featuredLink}>
+              <Text style={styles.featuredLinkText}>{featuredNext ? 'Começar jornada' : 'Jornada concluída'}</Text>
+              <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={C.pale} size={15} />
+            </View>
+          </Pressable>
+        ) : (
+          <View style={styles.empty}>
+            <Text style={styles.emptyTitle}>{loading ? 'Carregando jornadas...' : 'Novas jornadas em breve'}</Text>
+            <Text style={styles.emptyText}>{error || 'Estamos preparando novos conteúdos para você.'}</Text>
           </View>
-          <Text style={styles.featuredTag}>PARA COMEÇAR</Text>
-          <Text style={styles.featuredTitle}>Vida real 101</Text>
-          <Text style={styles.featuredDesc}>Uma introdução prática para tomar decisões, organizar prioridades e se virar melhor.</Text>
-          <View style={styles.featuredLink}>
-            <Text style={styles.featuredLinkText}>Ver jornada</Text>
-            <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={C.pale} size={15} />
-          </View>
-        </Pressable>
+        )}
 
-        <Text style={styles.sectionTitle}>Todas as áreas</Text>
+        <Text style={styles.sectionTitle}>Todas as jornadas</Text>
         <View style={styles.list}>
-          {topics.map((topic) => (
-            <Pressable key={topic.n} style={styles.topic} onPress={() => router.push('/(tabs)/journeys' as never)}>
-              <View style={styles.topicIcon}>
-                <SymbolView name={topic.icon} tintColor={C.purple} size={20} />
-              </View>
-              <View style={styles.topicBody}>
-                <Text style={styles.topicTag}>{topic.tag}</Text>
-                <Text style={styles.topicTitle}>{topic.title}</Text>
-                <Text style={styles.topicDesc}>{topic.desc}</Text>
-              </View>
-              <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor={C.muted} size={15} />
-            </Pressable>
-          ))}
+          {journeys.map((journey, index) => {
+            const related = missions.filter((mission) => mission.journey_id === journey.id);
+            const completed = related.filter((mission) => completedIds.includes(mission.id)).length;
+            const next = related.find((mission) => !completedIds.includes(mission.id)) ?? related[0];
+            const totalXp = related.reduce((sum, mission) => sum + mission.reward_xp, 0);
+            return (
+              <Pressable key={journey.id} style={styles.topic} onPress={() => openJourney(journey)}>
+                <View style={styles.topicIcon}>
+                  <SymbolView name={journeyIcons[index % journeyIcons.length]} tintColor={C.purple} size={20} />
+                </View>
+                <View style={styles.topicBody}>
+                  <Text style={styles.topicTag}>{journey.category.toUpperCase()}</Text>
+                  <Text style={styles.topicTitle}>{journey.title}</Text>
+                  <Text style={styles.topicDesc}>{journey.description}</Text>
+                  <Text style={styles.topicMeta}>{related.length} {related.length === 1 ? 'missão' : 'missões'} · {completed} concluídas · até {totalXp} XP</Text>
+                </View>
+                <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor={C.muted} size={15} />
+              </Pressable>
+            );
+          })}
         </View>
+        {!loading && !journeys.length && error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -82,4 +138,9 @@ const styles = StyleSheet.create({
   topicTag: { color: C.purple, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
   topicTitle: { color: C.text, fontSize: 13, fontWeight: '800', marginTop: 3 },
   topicDesc: { color: C.muted, fontSize: 10, lineHeight: 15, marginTop: 3 },
+  topicMeta: { color: C.pale, fontSize: 9, fontWeight: '700', marginTop: 7 },
+  empty: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 16, padding: 18, marginBottom: 25 },
+  emptyTitle: { color: C.text, fontSize: 14, fontWeight: '800' },
+  emptyText: { color: C.muted, fontSize: 11, lineHeight: 17, marginTop: 6 },
+  error: { color: '#F0A0A8', fontSize: 10, marginTop: 10 },
 });
