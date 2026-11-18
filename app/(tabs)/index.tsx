@@ -10,6 +10,8 @@ import {
   View,
 } from 'react-native';
 
+import { useAuth } from '@/providers/AuthProvider';
+
 const C = {
   background: '#0D0D10',
   surface: '#17161D',
