@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { router, Stack } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { loadLearningCatalog, type LearningJourney, type LearningMission } from '@/lib/learning';
 import { useAuth } from '@/providers/AuthProvider';
 
 const C = {
@@ -24,20 +26,51 @@ const C = {
   green: '#8BD8B0',
 };
 
-const categories = [
-  { number: '01', title: 'Dinheiro', description: 'Faça escolhas melhores', icon: { ios: 'wallet.bifold', android: 'account_balance_wallet', web: 'account_balance_wallet' } },
-  { number: '02', title: 'Comunicação', description: 'Expresse suas ideias', icon: { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' } },
-  { number: '03', title: 'Autonomia', description: 'Resolva as coisas por conta própria', icon: { ios: 'safari', android: 'explore', web: 'explore' } },
-  { number: '04', title: 'Mundo digital', description: 'Use a tecnologia com segurança', icon: { ios: 'iphone', android: 'smartphone', web: 'smartphone' } },
-] as const;
-
 export default function HomeScreen() {
   const { profile, user } = useAuth();
+  const [missions, setMissions] = useState<LearningMission[]>([]);
+  const [journeys, setJourneys] = useState<LearningJourney[]>([]);
+  const [completedMissionIds, setCompletedMissionIds] = useState<string[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState('');
+
+  useEffect(() => {
+    if (!user?.id) {
+      setCatalogLoading(false);
+      return;
+    }
+
+    let active = true;
+    loadLearningCatalog(user.id)
+      .then((catalog) => {
+        if (!active) return;
+        setMissions(catalog.missions);
+        setJourneys(catalog.journeys);
+        setCompletedMissionIds(catalog.completedMissionIds);
+      })
+      .catch((error: unknown) => {
+        if (active) setCatalogError(error instanceof Error ? error.message : 'Não foi possível carregar as missões.');
+      })
+      .finally(() => {
+        if (active) setCatalogLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [user?.id]);
+
   const firstName = profile?.display_name?.trim().split(' ')[0] || user?.email?.split('@')[0] || '';
   const xp = profile?.total_xp ?? 0;
   const level = profile?.current_level ?? 1;
   const levelProgress = xp % 500;
   const progressPercent = `${(levelProgress / 500) * 100}%`;
+  const featuredMission = missions.find((mission) => !completedMissionIds.includes(mission.id)) ?? missions[0] ?? null;
+  const featuredCompleted = Boolean(featuredMission && completedMissionIds.includes(featuredMission.id));
+  const journeyIcons = [
+    { ios: 'safari', android: 'explore', web: 'explore' },
+    { ios: 'wallet.bifold', android: 'account_balance_wallet', web: 'account_balance_wallet' },
+    { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' },
+    { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' },
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -116,39 +149,44 @@ export default function HomeScreen() {
               tintColor={C.muted}
               size={12}
             />
-            <Text style={styles.durationText}>3 min</Text>
+            <Text style={styles.durationText}>{featuredMission ? `${featuredMission.estimated_minutes} min` : '—'}</Text>
           </View>
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push('/mission' as never)}
-          style={({ pressed }) => [styles.missionCard, pressed && styles.pressed]}
-        >
-          <View style={styles.missionTop}>
-            <View style={styles.missionIcon}>
+        {featuredMission ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push({ pathname: '/mission', params: { id: featuredMission.id } } as never)}
+            style={({ pressed }) => [styles.missionCard, pressed && styles.pressed]}
+          >
+            <View style={styles.missionTop}>
+              <View style={styles.missionIcon}>
+                <SymbolView
+                  name={{ ios: 'lightbulb.fill', android: 'lightbulb', web: 'lightbulb' }}
+                  tintColor={C.purpleSoft}
+                  size={21}
+                />
+              </View>
+              <Text style={styles.reward}>+{featuredMission.reward_xp} XP</Text>
+            </View>
+            <Text style={styles.missionLabel}>{featuredMission.category.toUpperCase()}</Text>
+            <Text style={styles.missionTitle}>{featuredMission.title}</Text>
+            <Text style={styles.missionDescription}>{featuredMission.description}</Text>
+            <View style={styles.missionAction}>
+              <Text style={styles.missionActionText}>{featuredCompleted ? 'Rever missão' : 'Começar missão'}</Text>
               <SymbolView
-                name={{ ios: 'lightbulb.fill', android: 'lightbulb', web: 'lightbulb' }}
-                tintColor={C.purpleSoft}
-                size={21}
+                name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }}
+                tintColor="#FFFFFF"
+                size={17}
               />
             </View>
-            <Text style={styles.reward}>+100 XP</Text>
+          </Pressable>
+        ) : (
+          <View style={styles.missionCard}>
+            <Text style={styles.missionTitle}>{catalogLoading ? 'Carregando suas missões...' : 'Novas missões em breve'}</Text>
+            <Text style={styles.missionDescription}>{catalogError || 'Estamos preparando novos desafios para sua jornada.'}</Text>
           </View>
-          <Text style={styles.missionLabel}>AUTONOMIA · PRIMEIROS PASSOS</Text>
-          <Text style={styles.missionTitle}>Uma decisão de cada vez.</Text>
-          <Text style={styles.missionDescription}>
-            Treine como pensar antes de decidir diante de uma situação comum do dia a dia.
-          </Text>
-          <View style={styles.missionAction}>
-            <Text style={styles.missionActionText}>Começar missão</Text>
-            <SymbolView
-              name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }}
-              tintColor="#FFFFFF"
-              size={17}
-            />
-          </View>
-        </Pressable>
+        )}
 
         <View style={styles.sectionHeader}>
           <View>
@@ -161,18 +199,18 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.categoryGrid}>
-          {categories.map((category) => (
+          {journeys.slice(0, 4).map((journey, index) => (
             <Pressable
-              key={category.number}
-              onPress={() => router.navigate('/(tabs)/explore' as never)}
+              key={journey.id}
+              onPress={() => router.navigate('/(tabs)/journeys' as never)}
               style={({ pressed }) => [styles.categoryCard, pressed && styles.pressed]}
             >
               <View style={styles.categoryTop}>
-                <Text style={styles.categoryNumber}>{category.number}</Text>
-                <SymbolView name={category.icon} tintColor={C.purple} size={19} />
+                <Text style={styles.categoryNumber}>{String(index + 1).padStart(2, '0')}</Text>
+                <SymbolView name={journeyIcons[index % journeyIcons.length]} tintColor={C.purple} size={19} />
               </View>
-              <Text style={styles.categoryTitle}>{category.title}</Text>
-              <Text style={styles.categoryDescription}>{category.description}</Text>
+              <Text style={styles.categoryTitle}>{journey.category}</Text>
+              <Text style={styles.categoryDescription}>{journey.title}</Text>
             </Pressable>
           ))}
         </View>
