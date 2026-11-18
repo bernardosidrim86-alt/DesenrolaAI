@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { router, Stack } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { router, Stack, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
@@ -17,12 +17,14 @@ export default function JourneysScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (!user?.id) {
       setLoading(false);
       return;
     }
     let active = true;
+    setLoading(true);
+    setError('');
     loadLearningCatalog(user.id)
       .then((catalog) => {
         if (!active) return;
@@ -37,7 +39,7 @@ export default function JourneysScreen() {
         if (active) setLoading(false);
       });
     return () => { active = false; };
-  }, [user?.id]);
+  }, [user?.id]));
 
   function openJourney(journey: LearningJourney) {
     const related = missions.filter((mission) => mission.journey_id === journey.id);
