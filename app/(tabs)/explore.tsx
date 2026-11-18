@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { router, Stack } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { router, Stack, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
@@ -23,12 +23,14 @@ export default function ExploreScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (!user?.id) {
       setLoading(false);
       return;
     }
     let active = true;
+    setLoading(true);
+    setError('');
     loadLearningCatalog(user.id)
       .then((catalog) => {
         if (!active) return;
@@ -43,7 +45,7 @@ export default function ExploreScreen() {
         if (active) setLoading(false);
       });
     return () => { active = false; };
-  }, [user?.id]);
+  }, [user?.id]));
 
   const featuredJourney = journeys[0];
   const featuredMissions = featuredJourney ? missions.filter((mission) => mission.journey_id === featuredJourney.id) : [];
@@ -75,7 +77,7 @@ export default function ExploreScreen() {
             <Text style={styles.featuredTitle}>{featuredJourney.title}</Text>
             <Text style={styles.featuredDesc}>{featuredJourney.description}</Text>
             <View style={styles.featuredLink}>
-              <Text style={styles.featuredLinkText}>{featuredNext ? 'Começar jornada' : 'Jornada concluída'}</Text>
+              <Text style={styles.featuredLinkText}>{featuredNext && !completedIds.includes(featuredNext.id) ? 'Começar jornada' : 'Rever jornada'}</Text>
               <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={C.pale} size={15} />
             </View>
           </Pressable>
