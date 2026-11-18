@@ -1,6 +1,6 @@
-import { router, Stack } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
+import { type LearningMission, type MissionOption } from '@/lib/learning';
 import { useAuth } from '@/providers/AuthProvider';
 
 const C = {
@@ -27,29 +28,83 @@ const C = {
   danger: '#F0A0A8',
 };
 
-const options = [
-  { id: 'a', text: 'Decidir na hora, sem pensar muito.' },
-  { id: 'b', text: 'Pesquisar, comparar opções e avaliar o que faz sentido para mim.' },
-  { id: 'c', text: 'Escolher o que outra pessoa recomendou, sem conferir.' },
-] as const;
-
 export default function MissionScreen() {
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const missionId = typeof id === 'string' && id ? id : 'autonomia-decisao-01';
+  const { user, refreshProfile } = useAuth();
+  const [mission, setMission] = useState<LearningMission | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [completionMessage, setCompletionMessage] = useState('');
-  const { refreshProfile } = useAuth();
-  const correct = selected === 'b';
+
+  useEffect(() => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
+    let active = true;
+    setLoading(true);
+    setMission(null);
+    setLoadError('');
+    setSelected(null);
+    setSubmitted(false);
+    setCompleted(false);
+    setCompletionMessage('');
+
+    async function loadMission() {
+      try {
+        const { data, error } = await supabase
+          .from('missions')
+          .select('id, journey_id, category, title, description, reward_xp, lesson_content, question, options, correct_option, explanation, estimated_minutes, sort_order')
+          .eq('id', missionId)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (!data) throw new Error('Esta missão não está disponível no momento.');
+
+        const { data: completion, error: completionError } = await supabase
+          .from('mission_completions')
+          .select('mission_id')
+          .eq('user_id', user.id)
+          .eq('mission_id', missionId)
+          .maybeSingle();
+
+        if (completionError) throw completionError;
+        if (!active) return;
+
+        setMission(data as LearningMission);
+        if (completion) {
+          setCompleted(true);
+          setCompletionMessage('Você já concluiu esta missão. Seu progresso está salvo.');
+        }
+      } catch (error) {
+        if (active) setLoadError(error instanceof Error ? error.message : 'Não foi possível carregar esta missão.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadMission();
+    return () => { active = false; };
+  }, [missionId, user?.id]);
+
+  const options = (mission?.options ?? []) as MissionOption[];
+  const correct = Boolean(mission && selected === mission.correct_option);
 
   async function completeMission() {
-    if (!correct || completed || saving) return;
+    if (!mission || !correct || completed || saving) return;
 
     setSaving(true);
     setCompletionMessage('');
     try {
       const { data, error } = await supabase.rpc('complete_mission', {
-        p_mission_id: 'autonomia-decisao-01',
+        p_mission_id: mission.id,
       });
 
       if (error) throw error;
@@ -62,7 +117,7 @@ export default function MissionScreen() {
       setCompletionMessage(
         result?.already_completed
           ? 'Você já concluiu esta missão. Seus pontos anteriores estão preservados.'
-          : `Missão concluída! Você ganhou ${result?.awarded_xp ?? 100} XP.`,
+          : `Missão concluída! Você ganhou ${result?.awarded_xp ?? mission.reward_xp} XP.`,
       );
       await refreshProfile();
     } catch (error) {
@@ -76,6 +131,35 @@ export default function MissionScreen() {
     }
   }
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+        <View style={styles.center}>
+          <ActivityIndicator color={C.purple} size="large" />
+          <Text style={styles.loadText}>Carregando missão...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!mission) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+        <View style={styles.center}>
+          <Text style={styles.errorTitle}>Não encontramos essa missão.</Text>
+          <Text style={styles.loadText}>{loadError || 'Tente voltar e escolher outra jornada.'}</Text>
+          <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backButtonText}>Voltar</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -87,23 +171,19 @@ export default function MissionScreen() {
         </Pressable>
 
         <View style={styles.metaRow}>
-          <Text style={styles.eyebrow}>AUTONOMIA · MISSÃO 01</Text>
-          <View style={styles.xpPill}><Text style={styles.xpText}>+100 XP</Text></View>
+          <Text style={styles.eyebrow}>{mission.category.toUpperCase()}</Text>
+          <View style={styles.xpPill}><Text style={styles.xpText}>+{mission.reward_xp} XP</Text></View>
         </View>
-        <Text style={styles.title}>Uma decisão de cada vez.</Text>
-        <Text style={styles.subtitle}>
-          Aprender a decidir não é ter todas as respostas. É saber avaliar as opções antes de agir.
-        </Text>
+        <Text style={styles.title}>{mission.title}</Text>
+        <Text style={styles.subtitle}>{mission.description}</Text>
 
         <View style={styles.lesson}>
           <Text style={styles.lessonLabel}>NA PRÁTICA</Text>
-          <Text style={styles.lessonText}>
-            Quando surge uma escolha, uma pausa curta para entender o problema, comparar possibilidades e pensar nas consequências pode evitar decisões por impulso.
-          </Text>
+          <Text style={styles.lessonText}>{mission.lesson_content}</Text>
         </View>
 
         <Text style={styles.questionLabel}>SITUAÇÃO DO DIA A DIA</Text>
-        <Text style={styles.question}>Você quer comprar algo que custa caro. O que faz primeiro?</Text>
+        <Text style={styles.question}>{mission.question}</Text>
 
         <View style={styles.options}>
           {options.map((option) => {
@@ -111,16 +191,15 @@ export default function MissionScreen() {
             return (
               <Pressable
                 key={option.id}
-                disabled={completed}
                 onPress={() => {
                   setSelected(option.id);
                   setSubmitted(false);
-                  setCompletionMessage('');
+                  if (!completed) setCompletionMessage('');
                 }}
                 style={[
                   styles.option,
                   active && styles.optionActive,
-                  submitted && option.id === 'b' && styles.optionCorrect,
+                  submitted && correct && active && styles.optionCorrect,
                 ]}
               >
                 <View style={[styles.radio, active && styles.radioActive]}>
@@ -141,17 +220,15 @@ export default function MissionScreen() {
             />
             <View style={{ flex: 1 }}>
               <Text style={styles.feedbackTitle}>{correct ? 'Boa escolha.' : 'Vamos pensar de novo.'}</Text>
-              <Text style={styles.feedbackText}>
-                Comparar opções, conferir se a compra cabe no orçamento e pensar se você realmente precisa do item ajuda a decidir com mais consciência.
-              </Text>
+              <Text style={styles.feedbackText}>{mission.explanation}</Text>
             </View>
           </View>
         ) : null}
 
         <Pressable
-          disabled={!selected || completed}
+          disabled={!selected}
           onPress={() => setSubmitted(true)}
-          style={[styles.submit, (!selected || completed) && styles.submitDisabled]}
+          style={[styles.submit, !selected && styles.submitDisabled]}
         >
           <Text style={styles.submitText}>
             {submitted ? 'Resposta conferida' : 'Conferir resposta'}
@@ -167,7 +244,7 @@ export default function MissionScreen() {
             {saving ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.submitText}>Concluir missão e ganhar 100 XP</Text>
+              <Text style={styles.submitText}>Concluir missão e ganhar {mission.reward_xp} XP</Text>
             )}
           </Pressable>
         ) : null}
@@ -188,6 +265,11 @@ export default function MissionScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28 },
+  loadText: { color: C.muted, fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 12 },
+  errorTitle: { color: C.text, fontSize: 18, fontWeight: '800', textAlign: 'center' },
+  backButton: { minHeight: 44, paddingHorizontal: 25, backgroundColor: C.purple, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
+  backButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
   content: { padding: 22, paddingTop: 16, paddingBottom: 40 },
   back: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingVertical: 8, alignSelf: 'flex-start' },
   backText: { color: C.muted, fontSize: 12, fontWeight: '700' },
