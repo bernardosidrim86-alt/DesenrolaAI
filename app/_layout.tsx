@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { DarkTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import 'react-native-reanimated';
@@ -38,29 +39,36 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const { session, loading } = useAuth();
-  const segments = useSegments();
-  const router = useRouter();
-  const firstSegment = segments[0];
 
-  useEffect(() => {
-    if (loading) return;
-
-    const isLoginRoute = firstSegment === 'login';
-    if (!session && !isLoginRoute) {
-      router.replace('/login' as never);
-    } else if (session && isLoginRoute) {
-      router.replace('/(tabs)' as never);
-    }
-  }, [session, loading, firstSegment, router]);
+  if (loading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator color="#A88BFF" size="large" />
+      </View>
+    );
+  }
 
   return (
     <ThemeProvider value={DarkTheme}>
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="login" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="mission" />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Protected guard={!session}>
+          <Stack.Screen name="login" />
+        </Stack.Protected>
+        <Stack.Protected guard={Boolean(session)}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="mission" />
+          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        </Stack.Protected>
       </Stack>
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    backgroundColor: '#0D0D10',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
