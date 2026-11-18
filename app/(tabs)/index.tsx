@@ -23,11 +23,11 @@ const C = {
 };
 
 const categories = [
-  { number: '01', title: 'Dinheiro', description: 'Faça escolhas melhores', icon: 'wallet' },
-  { number: '02', title: 'Comunicação', description: 'Expresse suas ideias', icon: 'messages' },
-  { number: '03', title: 'Autonomia', description: 'Resolva as coisas por conta própria', icon: 'compass' },
-  { number: '04', title: 'Mundo digital', description: 'Use a tecnologia com segurança', icon: 'smartphone' },
-];
+  { number: '01', title: 'Dinheiro', description: 'Faça escolhas melhores', icon: { ios: 'wallet.bifold', android: 'account_balance_wallet', web: 'account_balance_wallet' } },
+  { number: '02', title: 'Comunicação', description: 'Expresse suas ideias', icon: { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' } },
+  { number: '03', title: 'Autonomia', description: 'Resolva as coisas por conta própria', icon: { ios: 'safari', android: 'explore', web: 'explore' } },
+  { number: '04', title: 'Mundo digital', description: 'Use a tecnologia com segurança', icon: { ios: 'iphone', android: 'smartphone', web: 'smartphone' } },
+] as const;
 
 export default function HomeScreen() {
   return (
@@ -160,15 +160,7 @@ export default function HomeScreen() {
             >
               <View style={styles.categoryTop}>
                 <Text style={styles.categoryNumber}>{category.number}</Text>
-                <SymbolView
-                  name={{
-                    ios: category.icon === 'wallet' ? 'wallet.bifold' : category.icon === 'messages' ? 'bubble.left.and.bubble.right' : category.icon === 'compass' ? 'safari' : 'iphone',
-                    android: category.icon === 'wallet' ? 'account_balance_wallet' : category.icon === 'messages' ? 'forum' : category.icon === 'compass' ? 'explore' : 'smartphone',
-                    web: category.icon === 'wallet' ? 'account_balance_wallet' : category.icon === 'messages' ? 'forum' : category.icon === 'compass' ? 'explore' : 'smartphone',
-                  }}
-                  tintColor={C.purple}
-                  size={19}
-                />
+                <SymbolView name={category.icon} tintColor={C.purple} size={19} />
               </View>
               <Text style={styles.categoryTitle}>{category.title}</Text>
               <Text style={styles.categoryDescription}>{category.description}</Text>
