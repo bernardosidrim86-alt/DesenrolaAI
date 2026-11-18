@@ -30,7 +30,7 @@ const TAB_ICONS = {
     android: 'account-circle',
     web: 'account-circle',
   },
-};
+} as const;
 
 export default function TabLayout() {
   return (
