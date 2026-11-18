@@ -1,9 +1,28 @@
 import { Stack } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
-const C = { bg: '#0D0D10', surface: '#17161D', border: '#2D2937', purple: '#A88BFF', pale: '#D0C0FF', text: '#F7F5FA', muted: '#9C98A6' };
+import { useAuth } from '@/providers/AuthProvider';
+
+const C = {
+  bg: '#0D0D10',
+  surface: '#17161D',
+  border: '#2D2937',
+  purple: '#A88BFF',
+  pale: '#D0C0FF',
+  text: '#F7F5FA',
+  muted: '#9C98A6',
+  danger: '#F0A0A8',
+};
 
 const achievements = [
   { icon: 'sparkles', title: 'Primeiro passo', desc: 'Conclua sua primeira missão' },
@@ -12,6 +31,16 @@ const achievements = [
 ] as const;
 
 export default function ProfileScreen() {
+  const { user, profile, signOut, loading } = useAuth();
+
+  async function handleSignOut() {
+    try {
+      await signOut();
+    } catch (error) {
+      console.warn('Não foi possível sair:', error);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -19,28 +48,24 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.brand}>DESENROLA<Text style={styles.brandAccent}>AI</Text></Text>
         <Text style={styles.eyebrow}>SEU PERFIL</Text>
+
         <View style={styles.profileHeader}>
           <View style={styles.avatar}>
             <SymbolView name={{ ios: 'person.fill', android: 'person', web: 'person' }} tintColor={C.pale} size={30} />
           </View>
-          <Text style={styles.name}>Sua jornada começa aqui</Text>
-          <Text style={styles.handle}>Perfil de visitante</Text>
+          <Text style={styles.name}>{profile?.display_name || user?.email?.split('@')[0] || 'Sua jornada'}</Text>
+          <Text style={styles.handle}>{user?.email}</Text>
         </View>
 
         <View style={styles.stats}>
           <View style={styles.stat}>
-            <Text style={styles.statValue}>0</Text>
+            <Text style={styles.statValue}>{profile?.total_xp ?? 0}</Text>
             <Text style={styles.statLabel}>XP conquistado</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>0</Text>
-            <Text style={styles.statLabel}>Missões feitas</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>0</Text>
-            <Text style={styles.statLabel}>Dias ativos</Text>
+            <Text style={styles.statValue}>{profile?.current_level ?? 1}</Text>
+            <Text style={styles.statLabel}>Nível atual</Text>
           </View>
         </View>
 
@@ -70,8 +95,12 @@ export default function ProfileScreen() {
 
         <View style={styles.note}>
           <SymbolView name={{ ios: 'info.circle', android: 'info', web: 'info' }} tintColor={C.purple} size={17} />
-          <Text style={styles.noteText}>Seu progresso será salvo na sua conta quando o cadastro estiver disponível.</Text>
+          <Text style={styles.noteText}>Seu progresso fica associado à sua conta e acompanha você entre dispositivos.</Text>
         </View>
+
+        <Pressable style={styles.signOut} onPress={handleSignOut} disabled={loading}>
+          {loading ? <ActivityIndicator color={C.pale} /> : <Text style={styles.signOutText}>Sair da conta</Text>}
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -101,4 +130,6 @@ const styles = StyleSheet.create({
   lock: { color: C.muted, fontSize: 7, fontWeight: '900', letterSpacing: 0.4 },
   note: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 23, backgroundColor: '#211C2C', borderRadius: 12, padding: 13 },
   noteText: { flex: 1, color: C.muted, fontSize: 10, lineHeight: 15 },
+  signOut: { minHeight: 47, borderRadius: 12, borderWidth: 1, borderColor: '#604048', alignItems: 'center', justifyContent: 'center', marginTop: 20 },
+  signOutText: { color: C.danger, fontSize: 12, fontWeight: '800' },
 });
