@@ -9,7 +9,7 @@ import { AuthProvider, useAuth } from '@/providers/AuthProvider';
 export { ErrorBoundary } from 'expo-router';
 
 export const unstable_settings = {
-  anchor: '(auth)',
+  anchor: 'login',
 };
 
 SplashScreen.preventAutoHideAsync();
@@ -45,10 +45,10 @@ function RootLayoutNav() {
   useEffect(() => {
     if (loading) return;
 
-    const inAuthGroup = firstSegment === '(auth)';
-    if (!session && !inAuthGroup) {
-      router.replace('/(auth)' as never);
-    } else if (session && inAuthGroup) {
+    const isLoginRoute = firstSegment === 'login';
+    if (!session && !isLoginRoute) {
+      router.replace('/login' as never);
+    } else if (session && isLoginRoute) {
       router.replace('/(tabs)' as never);
     }
   }, [session, loading, firstSegment, router]);
@@ -56,7 +56,7 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={DarkTheme}>
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="login" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="mission" />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
