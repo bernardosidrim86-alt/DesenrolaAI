@@ -30,6 +30,13 @@ const categories = [
 ] as const;
 
 export default function HomeScreen() {
+  const { profile, user } = useAuth();
+  const firstName = profile?.display_name?.trim().split(' ')[0] || user?.email?.split('@')[0] || '';
+  const xp = profile?.total_xp ?? 0;
+  const level = profile?.current_level ?? 1;
+  const levelProgress = xp % 500;
+  const progressPercent = `${(levelProgress / 500) * 100}%`;
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -60,7 +67,7 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.intro}>
-          <Text style={styles.eyebrow}>BOM TER VOCÊ POR AQUI</Text>
+          <Text style={styles.eyebrow}>BOM TER VOCÊ POR AQUI, {firstName.toUpperCase()}</Text>
           <Text style={styles.headline}>
             A vida acontece.
             {'\n'}
@@ -75,7 +82,7 @@ export default function HomeScreen() {
           <View style={styles.cardTopRow}>
             <View>
               <Text style={styles.overline}>SUA EVOLUÇÃO</Text>
-              <Text style={styles.level}>Nível 1 <Text style={styles.levelCaption}>· Começando</Text></Text>
+              <Text style={styles.level}>Nível {level} <Text style={styles.levelCaption}>· {levelProgress}/500 XP</Text></Text>
             </View>
             <View style={styles.xpPill}>
               <SymbolView
@@ -83,15 +90,15 @@ export default function HomeScreen() {
                 tintColor={C.purpleSoft}
                 size={13}
               />
-              <Text style={styles.xpText}>0 XP</Text>
+              <Text style={styles.xpText}>{xp} XP</Text>
             </View>
           </View>
           <View style={styles.progressMeta}>
             <Text style={styles.metaText}>Sua primeira conquista está perto</Text>
-            <Text style={styles.metaText}>0%</Text>
+            <Text style={styles.metaText}>{Math.round(levelProgress / 5)}%</Text>
           </View>
           <View style={styles.progressTrack}>
-            <View style={styles.progressFill} />
+            <View style={[styles.progressFill, { width: progressPercent }]} />
           </View>
           <Text style={styles.cardHint}>Conclua missões para avançar de nível.</Text>
         </View>
