@@ -2,9 +2,31 @@ import { router, Stack } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
-const C = { bg: '#0D0D10', surface: '#17161D', border: '#2D2937', purple: '#A88BFF', pale: '#D0C0FF', text: '#F7F5FA', muted: '#9C98A6', green: '#8BD8B0' };
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/providers/AuthProvider';
+
+const C = {
+  bg: '#0D0D10',
+  surface: '#17161D',
+  border: '#2D2937',
+  purple: '#A88BFF',
+  pale: '#D0C0FF',
+  text: '#F7F5FA',
+  muted: '#9C98A6',
+  green: '#8BD8B0',
+  danger: '#F0A0A8',
+};
+
 const options = [
   { id: 'a', text: 'Decidir na hora, sem pensar muito.' },
   { id: 'b', text: 'Pesquisar, comparar opções e avaliar o que faz sentido para mim.' },
@@ -14,7 +36,42 @@ const options = [
 export default function MissionScreen() {
   const [selected, setSelected] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [completionMessage, setCompletionMessage] = useState('');
+  const { refreshProfile } = useAuth();
   const correct = selected === 'b';
+
+  async function completeMission() {
+    if (!correct || completed || saving) return;
+
+    setSaving(true);
+    setCompletionMessage('');
+    try {
+      const { data, error } = await supabase.rpc('complete_mission', {
+        p_mission_id: 'autonomia-decisao-01',
+      });
+
+      if (error) throw error;
+
+      const result = Array.isArray(data) ? data[0] : data;
+      setCompleted(true);
+      setCompletionMessage(
+        result?.already_completed
+          ? 'Você já concluiu esta missão. Seus pontos anteriores estão preservados.'
+          : `Missão concluída! Você ganhou ${result?.awarded_xp ?? 100} XP.`,
+      );
+      await refreshProfile();
+    } catch (error) {
+      setCompletionMessage(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível salvar sua conclusão. Tente novamente.',
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -31,23 +88,37 @@ export default function MissionScreen() {
           <View style={styles.xpPill}><Text style={styles.xpText}>+100 XP</Text></View>
         </View>
         <Text style={styles.title}>Uma decisão de cada vez.</Text>
-        <Text style={styles.subtitle}>Aprender a decidir não é ter todas as respostas. É saber avaliar as opções antes de agir.</Text>
+        <Text style={styles.subtitle}>
+          Aprender a decidir não é ter todas as respostas. É saber avaliar as opções antes de agir.
+        </Text>
 
         <View style={styles.lesson}>
           <Text style={styles.lessonLabel}>NA PRÁTICA</Text>
-          <Text style={styles.lessonText}>Quando surge uma escolha, uma pausa curta para entender o problema, comparar possibilidades e pensar nas consequências pode evitar decisões por impulso.</Text>
+          <Text style={styles.lessonText}>
+            Quando surge uma escolha, uma pausa curta para entender o problema, comparar possibilidades e pensar nas consequências pode evitar decisões por impulso.
+          </Text>
         </View>
 
         <Text style={styles.questionLabel}>SITUAÇÃO DO DIA A DIA</Text>
         <Text style={styles.question}>Você quer comprar algo que custa caro. O que faz primeiro?</Text>
+
         <View style={styles.options}>
           {options.map((option) => {
             const active = selected === option.id;
             return (
               <Pressable
                 key={option.id}
-                onPress={() => { setSelected(option.id); setSubmitted(false); }}
-                style={[styles.option, active && styles.optionActive, submitted && option.id === 'b' && styles.optionCorrect]}
+                disabled={completed}
+                onPress={() => {
+                  setSelected(option.id);
+                  setSubmitted(false);
+                  setCompletionMessage('');
+                }}
+                style={[
+                  styles.option,
+                  active && styles.optionActive,
+                  submitted && option.id === 'b' && styles.optionCorrect,
+                ]}
               >
                 <View style={[styles.radio, active && styles.radioActive]}>
                   {active ? <View style={styles.radioInner} /> : null}
@@ -66,17 +137,47 @@ export default function MissionScreen() {
               size={21}
             />
             <View style={{ flex: 1 }}>
-              <Text style={styles.feedbackTitle}>{correct ? 'Boa escolha.' : 'Uma forma melhor de pensar.'}</Text>
-              <Text style={styles.feedbackText}>Comparar opções, conferir se a compra cabe no orçamento e pensar se você realmente precisa do item ajuda a decidir com mais consciência.</Text>
+              <Text style={styles.feedbackTitle}>{correct ? 'Boa escolha.' : 'Vamos pensar de novo.'}</Text>
+              <Text style={styles.feedbackText}>
+                Comparar opções, conferir se a compra cabe no orçamento e pensar se você realmente precisa do item ajuda a decidir com mais consciência.
+              </Text>
             </View>
           </View>
         ) : null}
 
-        <Pressable disabled={!selected} onPress={() => setSubmitted(true)} style={[styles.submit, !selected && styles.submitDisabled]}>
-          <Text style={styles.submitText}>{submitted ? 'Ver explicação novamente' : 'Conferir resposta'}</Text>
+        <Pressable
+          disabled={!selected || completed}
+          onPress={() => setSubmitted(true)}
+          style={[styles.submit, (!selected || completed) && styles.submitDisabled]}
+        >
+          <Text style={styles.submitText}>
+            {submitted ? 'Resposta conferida' : 'Conferir resposta'}
+          </Text>
         </Pressable>
 
-        <Text style={styles.disclaimer}>Esta é uma missão demonstrativa. O histórico e os pontos serão conectados à sua conta em uma próxima etapa.</Text>
+        {submitted && correct && !completed ? (
+          <Pressable
+            onPress={completeMission}
+            disabled={saving}
+            style={[styles.completeButton, saving && styles.submitDisabled]}
+          >
+            {saving ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitText}>Concluir missão e ganhar 100 XP</Text>
+            )}
+          </Pressable>
+        ) : null}
+
+        {completionMessage ? (
+          <Text style={[styles.completionMessage, completed && styles.successMessage]}>
+            {completionMessage}
+          </Text>
+        ) : null}
+
+        <Text style={styles.disclaimer}>
+          Seu progresso fica vinculado à sua conta. Cada missão só concede XP uma vez.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -110,7 +211,10 @@ const styles = StyleSheet.create({
   feedbackTitle: { color: C.text, fontSize: 12, fontWeight: '800' },
   feedbackText: { color: '#B7C7BF', fontSize: 11, lineHeight: 17, marginTop: 5 },
   submit: { backgroundColor: C.purple, borderRadius: 12, minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
+  completeButton: { backgroundColor: '#5A3E92', borderRadius: 12, minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
   submitDisabled: { opacity: 0.4 },
   submitText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
+  completionMessage: { color: C.pale, fontSize: 11, lineHeight: 17, textAlign: 'center', marginTop: 15 },
+  successMessage: { color: C.green },
   disclaimer: { color: C.muted, fontSize: 9, lineHeight: 14, textAlign: 'center', marginTop: 15 },
 });
