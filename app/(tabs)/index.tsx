@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { router, Stack } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { router, Stack, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -34,13 +34,15 @@ export default function HomeScreen() {
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState('');
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (!user?.id) {
       setCatalogLoading(false);
       return;
     }
 
     let active = true;
+    setCatalogLoading(true);
+    setCatalogError('');
     loadLearningCatalog(user.id)
       .then((catalog) => {
         if (!active) return;
@@ -56,7 +58,7 @@ export default function HomeScreen() {
       });
 
     return () => { active = false; };
-  }, [user?.id]);
+  }, [user?.id]));
 
   const firstName = profile?.display_name?.trim().split(' ')[0] || user?.email?.split('@')[0] || '';
   const xp = profile?.total_xp ?? 0;
