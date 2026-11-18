@@ -72,7 +72,7 @@ export default function HomeScreen() {
     { ios: 'wallet.bifold', android: 'account_balance_wallet', web: 'account_balance_wallet' },
     { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' },
     { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' },
-  ];
+  ] as const;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
