@@ -1,147 +1,184 @@
-
-import React from "react";
+import { router, Stack } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  View,
-  Text,
-  ScrollView,
   Pressable,
-  StyleSheet,
+  ScrollView,
   StatusBar,
-  Alert,
-} from "react-native";
-import { Stack } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
-const purple = "#9878F5";
+const C = {
+  background: '#0D0D10',
+  surface: '#17161D',
+  surfaceRaised: '#211C2C',
+  border: '#2D2937',
+  purple: '#A88BFF',
+  purpleSoft: '#D0C0FF',
+  text: '#F7F5FA',
+  muted: '#9C98A6',
+  green: '#8BD8B0',
+};
 
 const categories = [
-  { number: "01", name: "Dinheiro", desc: "Faça escolhas melhores" },
-  { number: "02", name: "Comunicação", desc: "Expresse suas ideias" },
-  { number: "03", name: "Autonomia", desc: "Assuma o controle" },
-  { number: "04", name: "Mundo digital", desc: "Domine o digital" },
+  { number: '01', title: 'Dinheiro', description: 'Faça escolhas melhores', icon: 'wallet' },
+  { number: '02', title: 'Comunicação', description: 'Expresse suas ideias', icon: 'messages' },
+  { number: '03', title: 'Autonomia', description: 'Resolva as coisas por conta própria', icon: 'compass' },
+  { number: '04', title: 'Mundo digital', description: 'Use a tecnologia com segurança', icon: 'smartphone' },
 ];
 
 export default function HomeScreen() {
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
-      <StatusBar barStyle="light-content" />
-
+      <StatusBar barStyle="light-content" backgroundColor={C.background} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.container}
+        contentContainerStyle={styles.content}
       >
         <View style={styles.header}>
           <View>
-            <Text style={styles.logo}>
-              TRILHA<Text style={{ color: purple }}>.</Text>
+            <Text style={styles.brand}>
+              DESENROLA<Text style={styles.brandAccent}>AI</Text>
             </Text>
-            <Text style={styles.tagline}>SUA EVOLUÇÃO COMEÇA AQUI</Text>
+            <Text style={styles.brandCaption}>APRENDA. PRATIQUE. DESENROLE.</Text>
           </View>
-
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>B</Text>
-          </View>
-        </View>
-
-        <View style={styles.intro}>
-          <Text style={styles.eyebrow}>BEM-VINDO À TRILHA</Text>
-          <Text style={styles.title}>
-            Cada dia é uma{"\n"}
-            <Text style={{ color: purple }}>nova oportunidade.</Text>
-          </Text>
-          <Text style={styles.description}>
-            Desenvolva habilidades, descubra possibilidades
-            e evolua no seu próprio ritmo.
-          </Text>
-        </View>
-
-        <View style={styles.xpCard}>
-          <View style={styles.row}>
-            <View>
-              <Text style={styles.mutedLabel}>SUA EVOLUÇÃO</Text>
-              <Text style={styles.level}>Nível 01</Text>
-            </View>
-            <View style={styles.xpBadge}>
-              <Text style={styles.xpText}>✦ 0 XP</Text>
-            </View>
-          </View>
-
-          <View style={[styles.row, { marginTop: 25, marginBottom: 10 }]}>
-            <Text style={styles.muted}>Seu primeiro passo</Text>
-            <Text style={styles.muted}>0%</Text>
-          </View>
-
-          <View style={styles.progress}>
-            <View style={styles.progressFill} />
-          </View>
-
-          <Text style={styles.xpFooter}>
-            Complete missões para desbloquear novos níveis.
-          </Text>
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Sua missão de hoje</Text>
-          <Text style={styles.sectionAccent}>01 / 01</Text>
-        </View>
-
-        <View style={styles.mission}>
-          <View style={styles.row}>
-            <View style={styles.missionIcon}>
-              <Text style={styles.missionIconText}>✦</Text>
-            </View>
-            <Text style={styles.reward}>+100 XP</Text>
-          </View>
-
-          <Text style={styles.categoryLabel}>
-            DESENVOLVIMENTO PESSOAL
-          </Text>
-
-          <Text style={styles.missionTitle}>Comece por você.</Text>
-
-          <Text style={styles.missionDescription}>
-            Descubra como pequenas decisões podem transformar
-            sua maneira de viver.
-          </Text>
-
           <Pressable
-            style={({ pressed }) => [
-              styles.button,
-              pressed && { opacity: 0.8 },
-            ]}
-            onPress={() =>
-              Alert.alert(
-                "Sua primeira missão",
-                "Estamos preparando sua jornada. Em breve você poderá começar!"
-              )
-            }
+            accessibilityRole="button"
+            accessibilityLabel="Abrir perfil"
+            onPress={() => router.navigate('/(tabs)/profile' as never)}
+            style={styles.avatar}
           >
-            <Text style={styles.buttonText}>Começar missão</Text>
-            <Text style={styles.arrow}>→</Text>
+            <SymbolView
+              name={{ ios: 'person.fill', android: 'person', web: 'person' }}
+              tintColor={C.purpleSoft}
+              size={19}
+            />
           </Pressable>
         </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Explore possibilidades</Text>
-          <Text style={styles.sectionAccent}>CATEGORIAS</Text>
+        <View style={styles.intro}>
+          <Text style={styles.eyebrow}>BOM TER VOCÊ POR AQUI</Text>
+          <Text style={styles.headline}>
+            A vida acontece.
+            {'\n'}
+            <Text style={styles.headlineAccent}>Aprenda a desenrolar.</Text>
+          </Text>
+          <Text style={styles.description}>
+            Habilidades para situações reais, em pequenas etapas que cabem no seu dia.
+          </Text>
         </View>
 
-        <View style={styles.grid}>
-          {categories.map((item) => (
-            <View key={item.number} style={styles.categoryCard}>
-              <Text style={styles.number}>{item.number}</Text>
-              <Text style={styles.categoryName}>{item.name}</Text>
-              <Text style={styles.categoryDesc}>{item.desc}</Text>
+        <View style={styles.progressCard}>
+          <View style={styles.cardTopRow}>
+            <View>
+              <Text style={styles.overline}>SUA EVOLUÇÃO</Text>
+              <Text style={styles.level}>Nível 1 <Text style={styles.levelCaption}>· Começando</Text></Text>
             </View>
+            <View style={styles.xpPill}>
+              <SymbolView
+                name={{ ios: 'sparkle', android: 'auto_awesome', web: 'auto_awesome' }}
+                tintColor={C.purpleSoft}
+                size={13}
+              />
+              <Text style={styles.xpText}>0 XP</Text>
+            </View>
+          </View>
+          <View style={styles.progressMeta}>
+            <Text style={styles.metaText}>Sua primeira conquista está perto</Text>
+            <Text style={styles.metaText}>0%</Text>
+          </View>
+          <View style={styles.progressTrack}>
+            <View style={styles.progressFill} />
+          </View>
+          <Text style={styles.cardHint}>Conclua missões para avançar de nível.</Text>
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>Comece por aqui</Text>
+            <Text style={styles.sectionSubtitle}>Uma missão rápida para hoje</Text>
+          </View>
+          <View style={styles.durationPill}>
+            <SymbolView
+              name={{ ios: 'clock', android: 'schedule', web: 'schedule' }}
+              tintColor={C.muted}
+              size={12}
+            />
+            <Text style={styles.durationText}>3 min</Text>
+          </View>
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/mission' as never)}
+          style={({ pressed }) => [styles.missionCard, pressed && styles.pressed]}
+        >
+          <View style={styles.missionTop}>
+            <View style={styles.missionIcon}>
+              <SymbolView
+                name={{ ios: 'lightbulb.fill', android: 'lightbulb', web: 'lightbulb' }}
+                tintColor={C.purpleSoft}
+                size={21}
+              />
+            </View>
+            <Text style={styles.reward}>+100 XP</Text>
+          </View>
+          <Text style={styles.missionLabel}>AUTONOMIA · PRIMEIROS PASSOS</Text>
+          <Text style={styles.missionTitle}>Uma decisão de cada vez.</Text>
+          <Text style={styles.missionDescription}>
+            Treine como pensar antes de decidir diante de uma situação comum do dia a dia.
+          </Text>
+          <View style={styles.missionAction}>
+            <Text style={styles.missionActionText}>Começar missão</Text>
+            <SymbolView
+              name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }}
+              tintColor="#FFFFFF"
+              size={17}
+            />
+          </View>
+        </Pressable>
+
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>O que você quer aprender?</Text>
+            <Text style={styles.sectionSubtitle}>Explore habilidades para a vida real</Text>
+          </View>
+          <Pressable onPress={() => router.navigate('/(tabs)/explore' as never)}>
+            <Text style={styles.seeAll}>VER TUDO</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.categoryGrid}>
+          {categories.map((category) => (
+            <Pressable
+              key={category.number}
+              onPress={() => router.navigate('/(tabs)/explore' as never)}
+              style={({ pressed }) => [styles.categoryCard, pressed && styles.pressed]}
+            >
+              <View style={styles.categoryTop}>
+                <Text style={styles.categoryNumber}>{category.number}</Text>
+                <SymbolView
+                  name={{
+                    ios: category.icon === 'wallet' ? 'wallet.bifold' : category.icon === 'messages' ? 'bubble.left.and.bubble.right' : category.icon === 'compass' ? 'safari' : 'iphone',
+                    android: category.icon === 'wallet' ? 'account_balance_wallet' : category.icon === 'messages' ? 'forum' : category.icon === 'compass' ? 'explore' : 'smartphone',
+                    web: category.icon === 'wallet' ? 'account_balance_wallet' : category.icon === 'messages' ? 'forum' : category.icon === 'compass' ? 'explore' : 'smartphone',
+                  }}
+                  tintColor={C.purple}
+                  size={19}
+                />
+              </View>
+              <Text style={styles.categoryTitle}>{category.title}</Text>
+              <Text style={styles.categoryDescription}>{category.description}</Text>
+            </Pressable>
           ))}
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerLogo}>TRILHA.</Text>
-          <Text style={styles.footerText}>
-            Evolua um pouco todos os dias.
-          </Text>
+          <Text style={styles.footerBrand}>DESENROLA<Text style={styles.brandAccent}>AI</Text></Text>
+          <Text style={styles.footerText}>A vida não vem com manual.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -149,251 +186,53 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: "#0D0D10",
-  },
-  container: {
-    paddingHorizontal: 22,
-    paddingTop: 18,
-    paddingBottom: 40,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 42,
-  },
-  logo: {
-    color: "#FFFFFF",
-    fontSize: 28,
-    fontWeight: "900",
-    letterSpacing: -1.5,
-  },
-  tagline: {
-    color: "#898793",
-    fontSize: 8,
-    letterSpacing: 2,
-    fontWeight: "700",
-    marginTop: 4,
-  },
-  avatar: {
-    width: 43,
-    height: 43,
-    borderRadius: 22,
-    backgroundColor: "#292333",
-    borderWidth: 1,
-    borderColor: "#57447F",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "700",
-  },
-  intro: {
-    marginBottom: 28,
-  },
-  eyebrow: {
-    color: purple,
-    fontSize: 10,
-    letterSpacing: 2,
-    fontWeight: "800",
-    marginBottom: 12,
-  },
-  title: {
-    color: "#FFFFFF",
-    fontSize: 33,
-    lineHeight: 41,
-    fontWeight: "800",
-    letterSpacing: -1.2,
-  },
-  description: {
-    color: "#9997A3",
-    fontSize: 14,
-    lineHeight: 22,
-    marginTop: 13,
-  },
-  xpCard: {
-    backgroundColor: "#19181F",
-    borderWidth: 1,
-    borderColor: "#2B2933",
-    borderRadius: 19,
-    padding: 19,
-    marginBottom: 34,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  mutedLabel: {
-    color: "#93919E",
-    fontSize: 9,
-    fontWeight: "800",
-    letterSpacing: 1.5,
-  },
-  level: {
-    color: "#FFFFFF",
-    fontSize: 22,
-    fontWeight: "800",
-    marginTop: 7,
-  },
-  xpBadge: {
-    backgroundColor: "#302744",
-    paddingHorizontal: 13,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  xpText: {
-    color: "#C6B3FF",
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  muted: {
-    color: "#92909C",
-    fontSize: 11,
-  },
-  progress: {
-    height: 6,
-    backgroundColor: "#34313D",
-    borderRadius: 10,
-    overflow: "hidden",
-  },
-  progressFill: {
-    width: "0%",
-    height: 6,
-    backgroundColor: purple,
-  },
-  xpFooter: {
-    color: "#92909C",
-    fontSize: 10,
-    marginTop: 12,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "800",
-  },
-  sectionAccent: {
-    color: purple,
-    fontSize: 9,
-    fontWeight: "800",
-  },
-  mission: {
-    backgroundColor: "#201B2D",
-    borderWidth: 1,
-    borderColor: "#403452",
-    borderRadius: 20,
-    padding: 19,
-    marginBottom: 34,
-  },
-  missionIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: "#382B50",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  missionIconText: {
-    color: "#C7B5FF",
-    fontSize: 22,
-  },
-  reward: {
-    color: "#C6B3FF",
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  categoryLabel: {
-    color: "#B69AFB",
-    fontSize: 9,
-    fontWeight: "800",
-    letterSpacing: 1.4,
-    marginTop: 21,
-  },
-  missionTitle: {
-    color: "#FFFFFF",
-    fontSize: 25,
-    fontWeight: "800",
-    marginTop: 9,
-  },
-  missionDescription: {
-    color: "#AAA5B7",
-    fontSize: 13,
-    lineHeight: 21,
-    marginTop: 9,
-  },
-  button: {
-    backgroundColor: purple,
-    borderRadius: 11,
-    padding: 14,
-    marginTop: 20,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  arrow: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    marginLeft: 9,
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    gap: 11,
-  },
-  categoryCard: {
-    width: "48%",
-    minHeight: 115,
-    backgroundColor: "#19181F",
-    borderWidth: 1,
-    borderColor: "#2B2933",
-    borderRadius: 16,
-    padding: 14,
-  },
-  number: {
-    color: purple,
-    fontSize: 10,
-    fontWeight: "900",
-    marginBottom: 13,
-  },
-  categoryName: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  categoryDesc: {
-    color: "#92909C",
-    fontSize: 10,
-    marginTop: 5,
-  },
-  footer: {
-    alignItems: "center",
-    marginTop: 38,
-  },
-  footerLogo: {
-    color: purple,
-    fontSize: 17,
-    fontWeight: "900",
-    letterSpacing: 2,
-  },
-  footerText: {
-    color: "#92909C",
-    fontSize: 10,
-    marginTop: 5,
-  },
+  safeArea: { flex: 1, backgroundColor: C.background },
+  content: { paddingHorizontal: 22, paddingTop: 14, paddingBottom: 34 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 38 },
+  brand: { color: C.text, fontSize: 22, fontWeight: '900', letterSpacing: -0.9 },
+  brandAccent: { color: C.purple },
+  brandCaption: { color: C.muted, fontSize: 8, fontWeight: '700', letterSpacing: 1.7, marginTop: 5 },
+  avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#211C2C', borderWidth: 1, borderColor: '#473A62', alignItems: 'center', justifyContent: 'center' },
+  intro: { marginBottom: 25 },
+  eyebrow: { color: C.purple, fontSize: 9, fontWeight: '800', letterSpacing: 1.8, marginBottom: 11 },
+  headline: { color: C.text, fontSize: 31, lineHeight: 38, fontWeight: '800', letterSpacing: -1.1 },
+  headlineAccent: { color: C.purpleSoft },
+  description: { color: C.muted, fontSize: 13, lineHeight: 20, marginTop: 12, maxWidth: 330 },
+  progressCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 18, padding: 18, marginBottom: 31 },
+  cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  overline: { color: C.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1.4 },
+  level: { color: C.text, fontSize: 21, fontWeight: '800', marginTop: 5 },
+  levelCaption: { color: C.muted, fontSize: 12, fontWeight: '500' },
+  xpPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 20, backgroundColor: '#302642' },
+  xpText: { color: C.purpleSoft, fontSize: 11, fontWeight: '800' },
+  progressMeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 22, marginBottom: 9 },
+  metaText: { color: C.muted, fontSize: 10 },
+  progressTrack: { height: 6, backgroundColor: '#34313B', borderRadius: 8, overflow: 'hidden' },
+  progressFill: { width: '0%', height: 6, backgroundColor: C.purple, borderRadius: 8 },
+  cardHint: { color: C.muted, fontSize: 10, marginTop: 11 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  sectionTitle: { color: C.text, fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
+  sectionSubtitle: { color: C.muted, fontSize: 11, marginTop: 4 },
+  durationPill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.surface, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 6 },
+  durationText: { color: C.muted, fontSize: 10, fontWeight: '600' },
+  missionCard: { backgroundColor: C.surfaceRaised, borderWidth: 1, borderColor: '#413653', borderRadius: 19, padding: 18, marginBottom: 31 },
+  pressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
+  missionTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
+  missionIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#382D4B', alignItems: 'center', justifyContent: 'center' },
+  reward: { color: C.purpleSoft, fontSize: 11, fontWeight: '800' },
+  missionLabel: { color: C.purple, fontSize: 9, fontWeight: '800', letterSpacing: 1.1 },
+  missionTitle: { color: C.text, fontSize: 22, lineHeight: 28, fontWeight: '800', marginTop: 8 },
+  missionDescription: { color: '#B0ABB9', fontSize: 12, lineHeight: 19, marginTop: 8 },
+  missionAction: { backgroundColor: C.purple, borderRadius: 11, minHeight: 46, paddingHorizontal: 15, marginTop: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  missionActionText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
+  seeAll: { color: C.purple, fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 },
+  categoryCard: { width: '48%', minHeight: 122, borderRadius: 15, padding: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border },
+  categoryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  categoryNumber: { color: C.purple, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  categoryTitle: { color: C.text, fontSize: 13, fontWeight: '800' },
+  categoryDescription: { color: C.muted, fontSize: 10, lineHeight: 15, marginTop: 5 },
+  footer: { alignItems: 'center', marginTop: 35, paddingTop: 20, borderTopWidth: 1, borderTopColor: C.border },
+  footerBrand: { color: C.text, fontSize: 13, fontWeight: '900', letterSpacing: 1.1 },
+  footerText: { color: C.muted, fontSize: 10, marginTop: 5 },
 });
