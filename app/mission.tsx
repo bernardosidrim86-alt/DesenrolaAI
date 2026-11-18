@@ -54,7 +54,7 @@ export default function MissionScreen() {
 
       if (error) throw error;
 
-      const result = Array.isArray(data) ? data[0] : data;
+      const result = (Array.isArray(data) ? data[0] : data) as {\n        awarded_xp?: number;\n        already_completed?: boolean;\n      } | null;
       setCompleted(true);
       setCompletionMessage(
         result?.already_completed
