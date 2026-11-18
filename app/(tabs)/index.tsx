@@ -65,7 +65,9 @@ export default function HomeScreen() {
   const level = profile?.current_level ?? 1;
   const levelProgress = xp % 500;
   const progressPercent = `${(levelProgress / 500) * 100}%`;
-  const featuredMission = missions.find((mission) => !completedMissionIds.includes(mission.id)) ?? missions[0] ?? null;
+  const firstJourneyId = journeys[0]?.id;
+  const firstJourneyMissions = missions.filter((mission) => mission.journey_id === firstJourneyId);
+  const featuredMission = firstJourneyMissions.find((mission) => !completedMissionIds.includes(mission.id)) ?? firstJourneyMissions[0] ?? missions.find((mission) => !completedMissionIds.includes(mission.id)) ?? missions[0] ?? null;
   const featuredCompleted = Boolean(featuredMission && completedMissionIds.includes(featuredMission.id));
   const journeyIcons = [
     { ios: 'safari', android: 'explore', web: 'explore' },
