@@ -105,6 +105,7 @@ export default function MissionScreen() {
     try {
       const { data, error } = await supabase.rpc('complete_mission', {
         p_mission_id: mission.id,
+        p_selected_option: selected ?? '',
       });
 
       if (error) throw error;
